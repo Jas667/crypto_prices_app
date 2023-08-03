@@ -1,18 +1,8 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import axios from "axios"; //instead of using fetch
-
-export type Crypto = {
-  ath: number;
-  atl: number;
-  current_price: number;
-  high_24h: number;
-  id: string;
-  low_24h: number;
-  name: string;
-  roi: null;
-  symbol: string;
-};
+import CryptoSummary from "./components/CryptoSummary";
+import { Crypto } from "./Types";
 
 function App() {
   const [cryptos, setCryptos] = useState<Crypto[] | null>();
@@ -26,11 +16,12 @@ function App() {
   }, []);
   return (
     <>
-      <div>{
-        cryptos ? cryptos.map((crypto) => {
-          return <p>{ crypto.name + ' $' + crypto.current_price }</p>
-         }) : null
-      }
+      <div>
+        {cryptos
+          ? cryptos.map((crypto) => {
+              return <CryptoSummary crypto={crypto} />;
+            })
+          : null}
       </div>
     </>
   );
