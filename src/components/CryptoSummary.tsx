@@ -14,7 +14,7 @@ export default function CryptoSummary({
     console.log(crypto.name, amount, crypto.current_price * amount);
   });
 
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = useState<number>(NaN);
   return (
     <div>
       <span key={crypto.id}>{crypto.name + " $" + crypto.current_price}</span>
