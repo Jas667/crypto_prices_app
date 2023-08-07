@@ -13,9 +13,9 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
-import type { ChartData, ChartOptions } from "chart.js"; //importing types from chart.js so they can be set on necessary states
-import moment from "moment"; //for formatting dates
+// import { Line } from "react-chartjs-2";
+// import type { ChartData, ChartOptions } from "chart.js"; //importing types from chart.js so they can be set on necessary states
+// import moment from "moment"; //for formatting dates
 
 ChartJS.register(
   CategoryScale,
@@ -29,23 +29,23 @@ ChartJS.register(
 
 function App() {
   const [cryptos, setCryptos] = useState<Crypto[] | null>(null);
-  const [selected, setSelected] = useState<Crypto | null>();
+  const [selected, setSelected] = useState<Crypto[]>([]);
 
   const [range, setRange] = useState<number>(30);
 
-  const [data, setData] = useState<ChartData<"line">>();
-  const [options, setOptions] = useState<ChartOptions<"line">>({
-    responsive: true,
-    plugins: {
-      legend: {
-        position: "top" as const,
-      },
-      title: {
-        display: true,
-        text: "Chart.js Line Chart",
-      },
-    },
-  });
+  // const [data, setData] = useState<ChartData<"line">>();
+  // const [options, setOptions] = useState<ChartOptions<"line">>({
+  //   responsive: true,
+  //   plugins: {
+  //     legend: {
+  //       position: "top" as const,
+  //     },
+  //     title: {
+  //       display: true,
+  //       text: "Chart.js Line Chart",
+  //     },
+  //   },
+  // });
 
   useEffect(() => {
     const url =
@@ -55,50 +55,63 @@ function App() {
     });
   }, []);
 
-  useEffect(() => {
-    if (!selected) return;
-    axios
-    .get(
-      `https://api.coingecko.com/api/v3/coins/${selected?.id}/market_chart?vs_currency=usd&days=${range}&${range === 1 ? 'interval=hourly' : `interval=daily`}`
-    )
-    .then((response) => {
-      setData({
-        labels: response.data.prices.map((price: number[]) => {
-          return moment.unix(price[0] / 1000).format(range === 1 ? "HH:MM" : "MM-DD");
-        }),
-        datasets: [
-          {
-            label: selected?.name,
-            data: response.data.prices.map((price: number[]) => {
-              return price[1];
-            }),
-            borderColor: "rgb(255, 99, 132)",
-            backgroundColor: "rgba(255, 99, 132, 0.5)",
-          },
-        ],
-      });
-      setOptions({
-        responsive: true,
-        plugins: {
-          legend: {
-            position: "top" as const,
-          },
-          title: {
-            display: true,
-            text: `${selected?.name} price over last ${range} ${range === 1 ? 'Day.' : 'Days.'}`,
-          },
-        },
-      })
-    });
-   }, [selected, range]);
+  // useEffect(() => {
+  //   if (!selected) return;
+  //   axios
+  //   .get(
+  //     `https://api.coingecko.com/api/v3/coins/${selected?.id}/market_chart?vs_currency=usd&days=${range}&${range === 1 ? 'interval=hourly' : `interval=daily`}`
+  //   )
+  //   .then((response) => {
+  //     setData({
+  //       labels: response.data.prices.map((price: number[]) => {
+  //         return moment.unix(price[0] / 1000).format(range === 1 ? "HH:MM" : "MM-DD");
+  //       }),
+  //       datasets: [
+  //         {
+  //           label: selected?.name,
+  //           data: response.data.prices.map((price: number[]) => {
+  //             return price[1];
+  //           }),
+  //           borderColor: "rgb(255, 99, 132)",
+  //           backgroundColor: "rgba(255, 99, 132, 0.5)",
+  //         },
+  //       ],
+  //     });
+  //     setOptions({
+  //       responsive: true,
+  //       plugins: {
+  //         legend: {
+  //           position: "top" as const,
+  //         },
+  //         title: {
+  //           display: true,
+  //           text: `${selected?.name} price over last ${range} ${range === 1 ? 'Day.' : 'Days.'}`,
+  //         },
+  //       },
+  //     })
+  //   });
+  //  }, [selected, range]);
 
+  // useEffect(() => {
+  //   console.log('SELECTED: ', selected)
+  // }, [selected])
+
+  function updateOwned(crypto: Crypto, amount: number): void {
+    // console.log('updateOwned', crypto, amount)
+    let temp = [...selected];
+    let tempObj = temp.find((c) => c.id === crypto.id);
+    if (tempObj) {
+      tempObj.owned = amount;
+      setSelected(temp);
+    }
+  }
   return (
     <>
       <div>
         <select
           onChange={(e) => {
-            const c = cryptos?.find((x) => x.id === e.target.value);
-            setSelected(c);
+            const c = cryptos?.find((x) => x.id === e.target.value) as Crypto;
+            setSelected([...selected, c]);
             //request and update data state
           }}
           defaultValue="default"
@@ -114,20 +127,33 @@ function App() {
               })
             : null}
         </select>
-        <select onChange={(e) => {
-          setRange(parseInt(e.target.value));
-        }}>
-          <option value={30}>30 Days</option>
-          <option value={7}>7 Days</option>
-          <option value={1}>1 Day</option>
-        </select>
       </div>
-      {selected ? <CryptoSummary crypto={selected} /> : null}
-      {data ? (
+
+      {selected.map((s) => {
+        return <CryptoSummary crypto={s} updateOwned={updateOwned} />;
+      })}
+
+      {/* {selected ? <CryptoSummary crypto={selected} /> : null} */}
+      {/* {data ? (
         <div style={{ width: 600 }}>
           <Line data={data} options={options} />
         </div>
-      ) : null}
+      ) : null} */}
+      {selected
+        ? 'Your portfolio is worth: $' + selected
+          .map((s) => {
+            if (isNaN(s.owned)) {
+              return 0;
+            }
+            return s.current_price * s.owned;
+          })
+          .reduce((prev, current) => {
+            return prev + current;
+          }, 0).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        : null}
     </>
   );
 }
